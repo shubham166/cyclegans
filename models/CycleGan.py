@@ -31,6 +31,8 @@ class CycleGan(pl.LightningModule):
 
         for m in [self.genX, self.genY, self.disX, self.disY]:
             init_weights(m)
+        
+        self.automatic_optimization = False
     
     def configure_optimizers(self):
         optG = Adam(
@@ -118,15 +120,38 @@ class CycleGan(pl.LightningModule):
         self.log('dis_loss', self.disLoss.item(), on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return self.disLoss
     
-    def training_step(self, batch, batch_idx, optimizer_idx):
-        imgA, imgB = batch['A'], batch['B']
-        discriminator_requires_grad = (optimizer_idx==1)
-        set_requires_grad([self.disX, self.disY], discriminator_requires_grad)
+    def training_step(self, batch, batch_idx):
+        imgA,cA, imgB, cB = *batch['A'], *batch['B']
+        optG, optD = self.optimizers()
+        # discriminator_requires_grad = (optimizer_idx==1)
+        # set_requires_grad([self.disX, self.disY], discriminator_requires_grad)
+
+        ######################
+        # Optimize Generator #
+        ######################
+        g_loss = self.generator_training_step(imgA, imgB)
+        optG.zero_grad()
+        self.manual_backward(g_loss)
+        optG.step()
+
         
-        if optimizer_idx == 0:
-            return self.generator_training_step(imgA, imgB)
-        else:
-            return self.discriminator_training_step(imgA, imgB)        
+
+        
+        ##########################
+        # Optimize Discriminator #
+        ##########################
+        d_loss = self.discriminator_training_step(imgA, imgB)
+        optD.zero_grad()
+        self.manual_backward(d_loss)
+        optD.step()
+        self.log_dict({"g_loss": g_loss, "d_loss": d_loss}, prog_bar=True)
+
+       
+
+        # if optimizer_idx == 0:
+        #     return self.generator_training_step(imgA, imgB)
+        # else:
+        #     return self.discriminator_training_step(imgA, imgB)        
 
 
 if __name__ == '__main__':

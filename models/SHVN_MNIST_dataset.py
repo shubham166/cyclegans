@@ -23,12 +23,14 @@ data_transforms = {
        'train': transforms.Compose([
             transforms.Resize(286, Image.BICUBIC),
             transforms.RandomCrop(256),
+            torchvision.transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
-            transforms.Normalize([.5], [.5])
+            transforms.Normalize([.5, .5, .5], [.5, .5, .5])
         ]),
         'test': transforms.Compose([
+            torchvision.transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
-            transforms.Normalize([.5], [.5])
+            transforms.Normalize([.5, .5, .5], [.5, .5, .5])
         ]) 
     }
 }

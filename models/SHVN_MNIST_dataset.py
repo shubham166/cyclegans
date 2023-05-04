@@ -9,8 +9,8 @@ from pytorch_lightning import LightningDataModule
 data_transforms = {
     "svhn": {
         'train': transforms.Compose([
-            transforms.Resize(286, Image.BICUBIC),
-            transforms.RandomCrop(256),
+            # transforms.Resize(286, Image.BICUBIC),
+            # transforms.RandomCrop(256),
             transforms.ToTensor(),
             transforms.Normalize([.5, .5, .5], [.5, .5, .5])
         ]),
@@ -21,8 +21,8 @@ data_transforms = {
     },
     "mnist": {
        'train': transforms.Compose([
-            transforms.Resize(286, Image.BICUBIC),
-            transforms.RandomCrop(256),
+            # transforms.Resize(286, Image.BICUBIC),
+            # transforms.RandomCrop(256),
             torchvision.transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor(),
             transforms.Normalize([.5, .5, .5], [.5, .5, .5])
@@ -50,7 +50,7 @@ class ShvnMnistDataset(Dataset):
     
     def __len__(self):
         return min(self.dataA.__len__(), self.dataB.__len__())
-        # return 100
+        return 100
 
     def __getitem__(self, index):
         return {

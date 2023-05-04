@@ -7,6 +7,9 @@ from torch.nn import functional as F
 from torchsummary import summary
 import itertools
 import pytorch_lightning as pl
+import numpy as np
+import torchvision.utils as vutils
+import os
 
 
 from models import PatchDiscriminator, ResnetGenerator
@@ -121,7 +124,7 @@ class CycleGan(pl.LightningModule):
         return self.disLoss
     
     def training_step(self, batch, batch_idx):
-        imgA,cA, imgB, cB = *batch['A'], *batch['B']
+        imgA, cA, imgB, cB = *batch['A'], *batch['B']
         optG, optD = self.optimizers()
         # discriminator_requires_grad = (optimizer_idx==1)
         # set_requires_grad([self.disX, self.disY], discriminator_requires_grad)
@@ -151,7 +154,34 @@ class CycleGan(pl.LightningModule):
         # if optimizer_idx == 0:
         #     return self.generator_training_step(imgA, imgB)
         # else:
-        #     return self.discriminator_training_step(imgA, imgB)        
+        #     return self.discriminator_training_step(imgA, imgB)  
+        # 
+    def sample_images(self):
+        print("Generating new samples")
+        batch = next(iter(self.trainer.datamodule.test_dataloader()))
+        test_image_A, test_label_A, test_image_B, test_label_B = *batch['A'], *batch["B"]
+        translated_images = self.genX(test_image_A)
+        # image_matrix = np.append(test_image_A, translated_images, axis=0)
+        image_matrix = torch.cat((test_image_A, translated_images), axis=0)
+
+        
+        vutils.save_image(image_matrix.cpu().data,
+                              os.path.join("./Data/results/" ,      
+                                           f"Cycle_GAN_Epoch_{self.current_epoch}.png"),
+                              normalize=True,
+                              nrow=4)
+
+    
+    def validation_step(self, batch, batch_idx, optimizer_idx = 0):
+        imgA, cA, imgB, cB = *batch['A'], *batch['B']
+        g_loss = self.generator_training_step(imgA, imgB)
+        d_loss = self.discriminator_training_step(imgA, imgB)
+
+        self.log_dict({"g_loss": g_loss, "d_loss": d_loss}, prog_bar=True)
+
+    def on_validation_end(self) -> None:
+        print("At the end of validation")
+        self.sample_images()     
 
 
 if __name__ == '__main__':
